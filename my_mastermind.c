@@ -75,6 +75,7 @@ void checkFlagArguments(Board* board, Argument argument){
     }
     if(argument.userSetCFlag == 1 && argument.previous[1] == 'c') {
         int loop;
+        printf("Code: ");
         for(loop = 0; loop < 4; loop++) {
             printf("%c ", argument.current[loop]);
         }
@@ -83,6 +84,8 @@ void checkFlagArguments(Board* board, Argument argument){
 
 void processArguments(Board* board, int argc, char* argv[]) {
     Argument arg = {"", "", 0, 0};
+    // int userSetAttempts = 0;
+    // int userSetCode = 0;
     int x = 1;
     for(; x <argc; x++){
         arg.current = argv[x];
@@ -99,10 +102,6 @@ void processArguments(Board* board, int argc, char* argv[]) {
             }
         }
         arg.previous = argv[x - 1]; 
-        checkFlagArguments(board, arg);
-
-        printf("Board -> %p - Argument -> %s\n", board, argv[x]);
-
-        
+        checkFlagArguments(board, arg);        
     }  
 }
