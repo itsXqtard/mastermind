@@ -81,20 +81,16 @@ int my_atoi(char* str) {
     return number;
 
 }
-/*
-*
-*Still does not work..
-*/
+
 int* convertStrToArray(char* str){
-    int code[CODE_SIZE] = { 0, 0, 0, 0 };
-    int* code_ptr = code;
+    static int code[CODE_SIZE] = {0, 0, 0 ,0};
     int index = 0;
     while(*str != '\0'){
-        code[index] = 10 * (str[index] - 48);
+        code[index] = (*str - 48);
         str++;
         index++;
     }
-    return code_ptr;
+    return code;
 }
 
 void checkFlagArguments(Board* board, Argument argument){
@@ -107,11 +103,9 @@ void checkFlagArguments(Board* board, Argument argument){
     }
     if(argument.userSetCFlag == 1 && argument.previous[1] == 'c') {
         int index;
-        int* code = convertStrToArray(argument.current);
-        printf("Code: ");
+        int* codeArray = convertStrToArray(argument.current);
         for(index = 0; index < CODE_SIZE; index++) {
-            // board->code[index] = my_atoi(chartoStr(argument.current[index]));
-            printf("%d\n", code[index]);
+            board->code[index] = codeArray[index];
         }
     }
 }
