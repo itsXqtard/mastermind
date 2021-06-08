@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include<time.h>
+#include <time.h>
+#include <unistd.h>
 
 #define CODE_SIZE 4
 
@@ -21,10 +22,15 @@ int my_atoi(char* str);
 void processArguments(Board* board,int argc, char* argv[]);
 
 int main(int argc, char* argv[]) {
+
+    char input[CODE_SIZE];
     Board my_board = initBoardDefault();
     processArguments(&my_board, argc, argv);
 
-    printf("Board attempts:%d\n", my_board.attempts);
+    printf("Attempts you have:%d What is your guess?\n", my_board.attempts);
+    read(STDIN_FILENO, input, sizeof(input));
+    write(STDOUT_FILENO, input, sizeof(input));
+
 
 
     return 0;
@@ -44,14 +50,19 @@ Board initBoardDefault() {
     //seed the randome generator with current time;
     srand(time(0));
     for(int x = 0; x < CODE_SIZE; x++){
-        int random_number = rand() % 4;
+        int random_number = rand() % CODE_SIZE;
         board.code[x] = random_number;
     }
     board.attempts = 10;
     return board;
 
 }
-
+/**
+ * str - a string that contains only digits
+ *  
+ *  returns positive integer conversion from string
+ *  or returns -1 if string contains characters not a digit.
+*/
 int my_atoi(char* str) {
     int number = 0;
     int index = 0;
@@ -64,28 +75,49 @@ int my_atoi(char* str) {
         // next character;         
         index++;                     
     }
+    if (!(str[index] >= '0' && str[index] <= '9')) {
+        return -1;
+    }
     return number;
 
 }
+/*
+*
+*Still does not work..
+*/
+int* convertStrToArray(char* str){
+    int code[CODE_SIZE] = { 0, 0, 0, 0 };
+    int* code_ptr = code;
+    int index = 0;
+    while(*str != '\0'){
+        code[index] = 10 * (str[index] - 48);
+        str++;
+        index++;
+    }
+    return code_ptr;
+}
 
 void checkFlagArguments(Board* board, Argument argument){
+    int attempts = my_atoi(argument.current);
     if(argument.userSetTFlag == 1 && argument.previous[1] == 't') {
-        int attempts = my_atoi(argument.current);
-        board->attempts = attempts;
+        //if failed to parce string to int value returns -1;
+        if(attempts != -1){
+            board->attempts = attempts;
+        }
     }
     if(argument.userSetCFlag == 1 && argument.previous[1] == 'c') {
-        int loop;
+        int index;
+        int* code = convertStrToArray(argument.current);
         printf("Code: ");
-        for(loop = 0; loop < 4; loop++) {
-            printf("%c ", argument.current[loop]);
+        for(index = 0; index < CODE_SIZE; index++) {
+            // board->code[index] = my_atoi(chartoStr(argument.current[index]));
+            printf("%d\n", code[index]);
         }
     }
 }
 
 void processArguments(Board* board, int argc, char* argv[]) {
     Argument arg = {"", "", 0, 0};
-    // int userSetAttempts = 0;
-    // int userSetCode = 0;
     int x = 1;
     for(; x <argc; x++){
         arg.current = argv[x];
