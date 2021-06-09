@@ -14,9 +14,9 @@ typedef struct Arguments {
 } Argument;
 
 Board initBoardDefault();
-int my_atoi(char* str);
 void processArguments(Board* board,int argc, char* argv[]);
 int isUserAttemptValid(char* code);
+void checkUserInput(Board* board, char* userAttempt);
 
 int main(int argc, char* argv[]) {
 
@@ -29,12 +29,37 @@ int main(int argc, char* argv[]) {
     int valid = isUserAttemptValid(input);
     printf("User validation: is input valid? %d\n", valid);
 
+    checkUserInput(&my_board, input);
+
 
 
     return 0;
 
 
 }
+
+char* findExactMatches(int boardCode[], char* userCode){
+    static char exactMatches[CODE_SIZE] = {'x', 'x', 'x', 'x'};
+
+    for(int x = 0; x < CODE_SIZE; x++) {
+        if(boardCode[x] != (userCode[x] - '0')) {
+            exactMatches[x] = userCode[x];
+        }
+    }
+    return exactMatches;
+
+}
+
+void checkUserInput(Board* board, char* userAttempt) {
+    char* matches = findExactMatches(board->code, userAttempt);
+    printf("Matches {");
+    for(int x = 0; x < CODE_SIZE; x++) {
+        printf("%c", matches[x]);
+    }
+    printf("}\n");
+}
+
+
 /**
  * 
  * Initializes a board with default values
@@ -48,7 +73,7 @@ Board initBoardDefault() {
     //seed the randome generator with current time;
     srand(time(0));
     for(int x = 0; x < CODE_SIZE; x++){
-        int random_number = rand() % CODE_SIZE;
+        int random_number = rand() % MAX_PIECES;
         board.code[x] = random_number;
     }
     board.attempts = 10;
@@ -56,7 +81,7 @@ Board initBoardDefault() {
 
 }
 /**
- * str - a string that contains only digits
+ * str - a string that contains only digits between 1-8
  *  
  *  returns positive integer conversion from string
  *  or returns -1 if string contains characters not a digit.
@@ -64,7 +89,7 @@ Board initBoardDefault() {
 int my_atoi(char* str) {
     int number = 0;
     int index = 0;
-    while ((str[index] >= '0' && str[index] <= '9'))
+    while ((str[index] >= '0' && str[index] <= '8'))
     {
         // multiply by base 10
         number *= 10;    
@@ -76,7 +101,7 @@ int my_atoi(char* str) {
     if(str[index] == '\0'){
         return number;
     }
-    if (!(str[index] >= '0' && str[index] <= '9')) {
+    if (!(str[index] >= '0' && str[index] <= '8')) {
         return -1;
     }
     return number;
@@ -124,7 +149,7 @@ int* convertStrToArray(char* str){
     while(*str != '\0'){
         int value = (*str - 48);
         //check if valid number
-        if(!(value >= 0 && value <= 9)){
+        if(!(value >= 0 && value <= 8)){
             code[index] = -1;
         } else {
             code[index] = value;

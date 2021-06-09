@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #define CODE_SIZE 4
+#define MAX_PIECES 7
 
 enum t_typename {
     TYPENAME_BOOL,
