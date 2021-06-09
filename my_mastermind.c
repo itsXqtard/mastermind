@@ -82,6 +82,13 @@ int my_atoi(char* str) {
     return number;
 }
 
+/**
+ *  Determines whether that value passed to the c flag in command line is valid
+ *  checks if any -1 is present in code
+ *  Return 0 - not valid
+ *  Return 1 - valid
+ *
+*/
 int isCFlagArgValid(int* code){
     for(int x = 0; x < CODE_SIZE; x++){
         if(code[x] == -1){
@@ -91,6 +98,12 @@ int isCFlagArgValid(int* code){
     return 1;
 }
 
+/**
+ * Determines whether the value inputted by user is valid
+ * checks if any of the character are digit values
+ * Return 0 - not valid
+ * Return 1 - valid
+*/
 int isUserAttemptValid(char* code) {
     if(my_atoi(code) != -1) {
         return 1;
@@ -98,6 +111,12 @@ int isUserAttemptValid(char* code) {
     return 0;
 }
 
+
+/**
+ * Converts code as a string to be as an integer array
+ * If any of the code characters are not a digit assigns -1
+ * for that position.
+*/
 int* convertStrToArray(char* str){
     static int code[CODE_SIZE] = {0, 0, 0 ,0};
     int* code_ptr = code;
@@ -149,7 +168,7 @@ void processArguments(Board* board, int argc, char* argv[]) {
                     arg.userSetCFlag = 1;
                     break;
                 default :
-                    printf("Invalid command\n" );
+                    printf("[-%c] is an invalid option\n", arg.current[1]);
             }
         }
         arg.previous = argv[x - 1]; 
