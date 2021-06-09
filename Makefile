@@ -6,7 +6,7 @@
   #  -Wall turns on most, but not all, compiler warnings
   #  -Wextra ??
   #  -Werror Make all warnings into errors.
-  CFLAGS  = -g -Wall -Wextra -Werror
+  CFLAGS  = -g -Wall -Wextra -Werror -std=c11
 
   # the build target executable:
   TARGET = my_mastermind
