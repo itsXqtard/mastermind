@@ -26,8 +26,8 @@ int main(int argc, char* argv[]) {
 
     printf("Attempts you have:%d What is your guess?\n", my_board.attempts);
     read(STDIN_FILENO, input, sizeof(input));
-    int valid = isValidInput(input, 2);
-    printf("Is Input Valid? : %d\n", valid);
+    // int valid = isValidInput(input, 2);
+    // printf("User validation: is input valid? %d\n", valid);
 
 
 
@@ -77,19 +77,33 @@ int my_atoi(char* str) {
         return -1;
     }
     return number;
-
 }
 
-int isValidInput(void* code, int type){
+int validateUserAttempt(int* arr){
+    for(int x = 0; x < CODE_SIZE; x++){
+        if(arr[x] == -1){
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int isValidInput(void* code_ptr, int type){
+    //1 char*
+    //2 int*
     if(type == 1){
-        code = (char*)code;
+        char* code = (char*)code_ptr;
+        if(my_atoi(code) != -1) {
+            return 1;
+        }
     }
     if(type == 2){
-        code = (int*)code;
+        int* code = (int*)code_ptr;
+        if(validateUserAttempt(code) != -1){
+            return -1;
+        }
     }
-    if(my_atoi(code_ptr) != -1) {
-        return 1;
-    }
+    
     return 0;
 }
 
@@ -122,7 +136,9 @@ void checkFlagArguments(Board* board, Argument argument){
     if(argument.userSetCFlag == 1 && argument.previous[1] == 'c') {
         int index;
         int* codeArray = convertStrToArray(argument.current);
-        if(isValidInput(codeArray, 1)) {
+        int valid = isValidInput(codeArray, 1);
+        printf("Argument validation: -c valid? %d\n", valid);
+        if(valid) {
             for(index = 0; index < CODE_SIZE; index++) {
                 board->code[index] = codeArray[index];
                 printf("%d\n", codeArray[index]);
