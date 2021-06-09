@@ -16,7 +16,7 @@ typedef struct Arguments {
 Board initBoardDefault();
 int my_atoi(char* str);
 void processArguments(Board* board,int argc, char* argv[]);
-int isValidInput(void* code, int type);
+int isUserAttemptValid(char* code);
 
 int main(int argc, char* argv[]) {
 
@@ -26,8 +26,8 @@ int main(int argc, char* argv[]) {
 
     printf("Attempts you have:%d What is your guess?\n", my_board.attempts);
     read(STDIN_FILENO, input, sizeof(input));
-    // int valid = isValidInput(input, 2);
-    // printf("User validation: is input valid? %d\n", valid);
+    int valid = isUserAttemptValid(input);
+    printf("User validation: is input valid? %d\n", valid);
 
 
 
@@ -64,7 +64,7 @@ Board initBoardDefault() {
 int my_atoi(char* str) {
     int number = 0;
     int index = 0;
-    while ((str[index] >= '0' && str[index] <= '9') || str[index] != '\0')
+    while ((str[index] >= '0' && str[index] <= '9'))
     {
         // multiply by base 10
         number *= 10;    
@@ -73,37 +73,28 @@ int my_atoi(char* str) {
         // next character;         
         index++;                     
     }
-    if (!(str[index] >= '0' && str[index] <= '9') || str[index] != '\0') {
+    if(str[index] == '\0'){
+        return number;
+    }
+    if (!(str[index] >= '0' && str[index] <= '9')) {
         return -1;
     }
     return number;
 }
 
-int validateUserAttempt(int* arr){
+int isCFlagArgValid(int* code){
     for(int x = 0; x < CODE_SIZE; x++){
-        if(arr[x] == -1){
-            return -1;
+        if(code[x] == -1){
+            return 0;
         }
     }
-    return 0;
+    return 1;
 }
 
-int isValidInput(void* code_ptr, int type){
-    //1 char*
-    //2 int*
-    if(type == 1){
-        char* code = (char*)code_ptr;
-        if(my_atoi(code) != -1) {
-            return 1;
-        }
+int isUserAttemptValid(char* code) {
+    if(my_atoi(code) != -1) {
+        return 1;
     }
-    if(type == 2){
-        int* code = (int*)code_ptr;
-        if(validateUserAttempt(code) != -1){
-            return -1;
-        }
-    }
-    
     return 0;
 }
 
@@ -136,12 +127,9 @@ void checkFlagArguments(Board* board, Argument argument){
     if(argument.userSetCFlag == 1 && argument.previous[1] == 'c') {
         int index;
         int* codeArray = convertStrToArray(argument.current);
-        int valid = isValidInput(codeArray, 1);
-        printf("Argument validation: -c valid? %d\n", valid);
-        if(valid) {
+        if(isCFlagArgValid(codeArray)) {
             for(index = 0; index < CODE_SIZE; index++) {
                 board->code[index] = codeArray[index];
-                printf("%d\n", codeArray[index]);
             }
         }
     }
