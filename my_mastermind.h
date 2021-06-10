@@ -5,6 +5,7 @@
 
 #define CODE_SIZE 4
 #define MAX_PIECES 7
+#define MAX_SINGLE_DIGIT 9
 
 enum t_typename {
     TYPENAME_BOOL,

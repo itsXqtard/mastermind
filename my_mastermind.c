@@ -24,14 +24,24 @@ int main(int argc, char* argv[]) {
     Board my_board = initBoardDefault();
     processArguments(&my_board, argc, argv);
 
-    printf("Attempts you have:%d What is your guess?\n", my_board.attempts);
-    read(STDIN_FILENO, input, sizeof(input));
-    int valid = isUserAttemptValid(input);
-    printf("User validation: is input valid? %d\n", valid);
+    printf("Will you find the secret code?\n");
+    int round = 0;
+    do {
+        printf("---\n");
+        printf("Round %d\n", round);
+        read(STDIN_FILENO, input, sizeof(input));
+        int valid = isUserAttemptValid(input);
+        if(valid == 0){
+            printf("Wrong input!\n");
+            continue;
+        } else {
+            write(STDOUT_FILENO, input, sizeof(input));
+            checkUserInput(&my_board, input);
+            my_board.attempts--;
+            round++;
+        }
 
-    checkUserInput(&my_board, input);
-
-
+    } while(my_board.attempts != 0);
 
     return 0;
 
@@ -52,11 +62,12 @@ char* findExactMatches(int boardCode[], char* userCode){
 
 void checkUserInput(Board* board, char* userAttempt) {
     char* matches = findExactMatches(board->code, userAttempt);
+    // int exactCount = 0;
     printf("Matches {");
     for(int x = 0; x < CODE_SIZE; x++) {
         printf("%c", matches[x]);
     }
-    printf("}\n");
+    printf("}");
 }
 
 
@@ -73,7 +84,7 @@ Board initBoardDefault() {
     //seed the randome generator with current time;
     srand(time(0));
     for(int x = 0; x < CODE_SIZE; x++){
-        int random_number = rand() % MAX_PIECES;
+        int random_number = rand() % MAX_PIECES + 1;
         board.code[x] = random_number;
     }
     board.attempts = 10;
@@ -81,15 +92,16 @@ Board initBoardDefault() {
 
 }
 /**
- * str - a string that contains only digits between 1-8
+ * str - a string that contains only digits between 0-limit
  *  
  *  returns positive integer conversion from string
  *  or returns -1 if string contains characters not a digit.
 */
-int my_atoi(char* str) {
+int my_atoi(char* str, int limit) {
     int number = 0;
     int index = 0;
-    while ((str[index] >= '0' && str[index] <= '8'))
+    char max = limit + '0';
+    while ((str[index] >= '0' && str[index] <= max))
     {
         // multiply by base 10
         number *= 10;    
@@ -101,15 +113,15 @@ int my_atoi(char* str) {
     if(str[index] == '\0'){
         return number;
     }
-    if (!(str[index] >= '0' && str[index] <= '8')) {
+    if (!(str[index] >= '0' && str[index] <= max)) {
         return -1;
     }
     return number;
 }
 
 /**
- *  Determines whether that value passed to the c flag in command line is valid
- *  checks if any -1 is present in code
+ *  Determines whether the value passed to the c flag in command line is valid
+ *  checks if -1 is present in code
  *  Return 0 - not valid
  *  Return 1 - valid
  *
@@ -130,7 +142,7 @@ int isCFlagArgValid(int* code){
  * Return 1 - valid
 */
 int isUserAttemptValid(char* code) {
-    if(my_atoi(code) != -1) {
+    if(my_atoi(code, MAX_PIECES) != -1) {
         return 1;
     }
     return 0;
@@ -149,7 +161,7 @@ int* convertStrToArray(char* str){
     while(*str != '\0'){
         int value = (*str - 48);
         //check if valid number
-        if(!(value >= 0 && value <= 8)){
+        if(!(value >= 0 && value <= 7)){
             code[index] = -1;
         } else {
             code[index] = value;
@@ -161,7 +173,7 @@ int* convertStrToArray(char* str){
 }
 
 void checkFlagArguments(Board* board, Argument argument){
-    int attempts = my_atoi(argument.current);
+    int attempts = my_atoi(argument.current, MAX_SINGLE_DIGIT);
     if(argument.userSetTFlag == 1 && argument.previous[1] == 't') {
         //if failed to parce string to int value returns -1;
         if(attempts != -1){
