@@ -9,8 +9,8 @@ typedef struct Boards {
 typedef struct Arguments {
     char* previous;
     char* current;
-    int userSetCFlag;
-    int userSetTFlag;
+    int userSetCode;
+    int userSetAttempts;
 } Argument;
 
 Board initBoardDefault();
@@ -24,48 +24,46 @@ int main(int argc, char* argv[]) {
     Board my_board = initBoardDefault();
     processArguments(&my_board, argc, argv);
 
-    printf("Will you find the secret code?\n");
+    printf("Will you find the secret code with %d attempts\n", my_board.attempts);
     int round = 0;
-    do {
+    while(my_board.attempts != 0) {
         printf("---\n");
         printf("Round %d\n", round);
-        read(STDIN_FILENO, input, sizeof(input));
+        int size = read(STDIN_FILENO, input, sizeof(input) + 1);
+        if (size < 0) {
+            continue;
+        } 
         int valid = isUserAttemptValid(input);
         if(valid == 0){
             printf("Wrong input!\n");
-            continue;
         } else {
-            write(STDOUT_FILENO, input, sizeof(input));
+            printf("Valid Input: %c, %c, %c, %c\n", input[0],input[1],input[2],input[3]);
             checkUserInput(&my_board, input);
             my_board.attempts--;
             round++;
         }
-
-    } while(my_board.attempts != 0);
+    } 
 
     return 0;
 
 
 }
 
-char* findExactMatches(int boardCode[], char* userCode){
-    static char exactMatches[CODE_SIZE] = {'x', 'x', 'x', 'x'};
-
+void findExactMatches(int boardCode[], char* userCode, char matches[]){
     for(int x = 0; x < CODE_SIZE; x++) {
         if(boardCode[x] != (userCode[x] - '0')) {
-            exactMatches[x] = userCode[x];
+            matches[x] = userCode[x];
         }
     }
-    return exactMatches;
-
 }
 
 void checkUserInput(Board* board, char* userAttempt) {
-    char* matches = findExactMatches(board->code, userAttempt);
+    char exactMatches[CODE_SIZE] = {'x', 'x', 'x', 'x'};
+    findExactMatches(board->code, userAttempt, exactMatches);
     // int exactCount = 0;
     printf("Matches {");
     for(int x = 0; x < CODE_SIZE; x++) {
-        printf("%c", matches[x]);
+        printf("%c", exactMatches[x]);
     }
     printf("}");
 }
@@ -101,16 +99,16 @@ int my_atoi(char* str, int limit) {
     int number = 0;
     int index = 0;
     char max = limit + '0';
-    while ((str[index] >= '0' && str[index] <= max))
+    while ((str[index] >= '0' && str[index] <= max) || index < CODE_SIZE)
     {
         // multiply by base 10
         number *= 10;    
-        // convet ASCII '0'..'9' to digit 0..9 and add it to number           
+        // convet ASCII '0'..limit to digit 0..limit and add it to number           
         number += str[index] - '0';
         // next character;         
         index++;                     
     }
-    if(str[index] == '\0'){
+    if(str[index] == '\n' || str[index] == '\0'){
         return number;
     }
     if (!(str[index] >= '0' && str[index] <= max)) {
@@ -154,7 +152,7 @@ int isUserAttemptValid(char* code) {
  * If any of the code characters are not a digit assigns -1
  * for that position.
 */
-int* convertStrToArray(char* str){
+int* convertCArgToArray(char* str){
     static int code[CODE_SIZE] = {0, 0, 0 ,0};
     int* code_ptr = code;
     int index = 0;
@@ -173,16 +171,16 @@ int* convertStrToArray(char* str){
 }
 
 void checkFlagArguments(Board* board, Argument argument){
-    int attempts = my_atoi(argument.current, MAX_SINGLE_DIGIT);
-    if(argument.userSetTFlag == 1 && argument.previous[1] == 't') {
+    if(argument.userSetAttempts == 1 && argument.previous[1] == 't') {
+        int attempts = my_atoi(argument.current, MAX_SINGLE_DIGIT);
         //if failed to parce string to int value returns -1;
         if(attempts != -1){
             board->attempts = attempts;
         }
     }
-    if(argument.userSetCFlag == 1 && argument.previous[1] == 'c') {
+    if(argument.userSetCode == 1 && argument.previous[1] == 'c') {
         int index;
-        int* codeArray = convertStrToArray(argument.current);
+        int* codeArray = convertCArgToArray(argument.current);
         if(isCFlagArgValid(codeArray)) {
             for(index = 0; index < CODE_SIZE; index++) {
                 board->code[index] = codeArray[index];
@@ -199,10 +197,10 @@ void processArguments(Board* board, int argc, char* argv[]) {
         if(arg.current[0] == '-'){
             switch(arg.current[1]) {
                 case 't' :
-                    arg.userSetTFlag = 1;
+                    arg.userSetAttempts = 1;
                     break;
                 case 'c' :
-                    arg.userSetCFlag = 1;
+                    arg.userSetCode = 1;
                     break;
                 default :
                     printf("[-%c] is an invalid option\n", arg.current[1]);
