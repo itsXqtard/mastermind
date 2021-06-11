@@ -20,7 +20,7 @@ void checkUserInput(Board* board, char* userAttempt);
 
 int main(int argc, char* argv[]) {
 
-    char input[CODE_SIZE];
+    char input[256];
     Board my_board = initBoardDefault();
     processArguments(&my_board, argc, argv);
 
@@ -30,17 +30,14 @@ int main(int argc, char* argv[]) {
         printf("---\n");
         printf("Round %d\n", round);
         int size = read(STDIN_FILENO, input, sizeof(input) + 1);
-        if (size < 0) {
-            continue;
-        } 
-        int valid = isUserAttemptValid(input);
-        if(valid == 0){
+        if(!isUserAttemptValid(input) || size != 5){
             printf("Wrong input!\n");
         } else {
             printf("Valid Input: %c, %c, %c, %c\n", input[0],input[1],input[2],input[3]);
             checkUserInput(&my_board, input);
             my_board.attempts--;
             round++;
+            printf("\n");
         }
     } 
 
@@ -49,23 +46,51 @@ int main(int argc, char* argv[]) {
 
 }
 
-void findExactMatches(int boardCode[], char* userCode, char matches[]){
+/**
+ * Returns count of exact positions
+ * Side effect - Replaces non exact positions with user's input;
+*/
+int replaceAndReturnExactCount(int boardCode[], char* userCode, char matches[]){
+    int exact = 0;
     for(int x = 0; x < CODE_SIZE; x++) {
-        if(boardCode[x] != (userCode[x] - '0')) {
+        int userValue = userCode[x] - '0';
+        if(userValue != boardCode[x]) {
             matches[x] = userCode[x];
+            continue;
         }
+        exact++;
     }
+    return exact;
+}
+
+int contains(char* str, int c)
+{
+    while(*str != '\0') {
+        //convert to character and compare
+        if(*str == (c + '0')){
+            return 1;
+        }
+        str++;
+    }
+    return 0;
+
 }
 
 void checkUserInput(Board* board, char* userAttempt) {
-    char exactMatches[CODE_SIZE] = {'x', 'x', 'x', 'x'};
-    findExactMatches(board->code, userAttempt, exactMatches);
-    // int exactCount = 0;
-    printf("Matches {");
+    char exactMatches[CODE_SIZE + 1] = {'x', 'x', 'x', 'x', '\0'};
+    int exact = replaceAndReturnExactCount(board->code, userAttempt, exactMatches);
+    int totalMissplaced = CODE_SIZE - exact;
+    int missplaced = 0;
     for(int x = 0; x < CODE_SIZE; x++) {
-        printf("%c", exactMatches[x]);
+        if(exactMatches[x] == 'x'){
+            continue;
+        }
+        if(contains(exactMatches, board->code[x]) == 1) {
+            missplaced++;
+        } 
     }
-    printf("}");
+    totalMissplaced -= (totalMissplaced - missplaced);
+    printf("exact: %d missplaced %d\n", exact, possibleMissplaced);
 }
 
 
@@ -99,22 +124,20 @@ int my_atoi(char* str, int limit) {
     int number = 0;
     int index = 0;
     char max = limit + '0';
-    while ((str[index] >= '0' && str[index] <= max) || index < CODE_SIZE)
+    while ((str[index] >= '0' && str[index] <= max))
     {
-        // multiply by base 10
+        //Multiply by base 10
         number *= 10;    
-        // convet ASCII '0'..limit to digit 0..limit and add it to number           
+        // Convet current character to digit and add to current value.         
         number += str[index] - '0';
         // next character;         
         index++;                     
     }
+    //check for '\n' key if taking input from stdin
     if(str[index] == '\n' || str[index] == '\0'){
         return number;
     }
-    if (!(str[index] >= '0' && str[index] <= max)) {
-        return -1;
-    }
-    return number;
+    return -1;
 }
 
 /**
@@ -124,7 +147,7 @@ int my_atoi(char* str, int limit) {
  *  Return 1 - valid
  *
 */
-int isCFlagArgValid(int* code){
+int isArgCodeValid(int* code){
     for(int x = 0; x < CODE_SIZE; x++){
         if(code[x] == -1){
             return 0;
@@ -152,14 +175,14 @@ int isUserAttemptValid(char* code) {
  * If any of the code characters are not a digit assigns -1
  * for that position.
 */
-int* convertCArgToArray(char* str){
+int* convertArgCodeToArray(char* str){
     static int code[CODE_SIZE] = {0, 0, 0 ,0};
     int* code_ptr = code;
     int index = 0;
     while(*str != '\0'){
-        int value = (*str - 48);
+        int value = (*str - '0');
         //check if valid number
-        if(!(value >= 0 && value <= 7)){
+        if(!(value >= 0 && value <= MAX_PIECES)){
             code[index] = -1;
         } else {
             code[index] = value;
@@ -170,22 +193,29 @@ int* convertCArgToArray(char* str){
     return code_ptr;
 }
 
-void checkFlagArguments(Board* board, Argument argument){
-    if(argument.userSetAttempts == 1 && argument.previous[1] == 't') {
-        int attempts = my_atoi(argument.current, MAX_SINGLE_DIGIT);
-        //if failed to parce string to int value returns -1;
-        if(attempts != -1){
-            board->attempts = attempts;
+void handleOptionCode(Board* board, Argument argument){
+    int* codeArray = convertArgCodeToArray(argument.current);
+    if(isArgCodeValid(codeArray)) {
+        for(int index = 0; index < CODE_SIZE; index++) {
+            board->code[index] = codeArray[index];
         }
     }
+}
+
+void handleOptionAttempt(Board* board, Argument argument) {
+    int attempts = my_atoi(argument.current, MAX_SINGLE_DIGIT);
+    //if failed to parce string to int value returns -1;
+    if(attempts != -1){
+        board->attempts = attempts;
+    }
+}
+
+void checkFlagArguments(Board* board, Argument argument){
+    if(argument.userSetAttempts == 1 && argument.previous[1] == 't') {
+        handleOptionAttempt(board, argument);
+    }
     if(argument.userSetCode == 1 && argument.previous[1] == 'c') {
-        int index;
-        int* codeArray = convertCArgToArray(argument.current);
-        if(isCFlagArgValid(codeArray)) {
-            for(index = 0; index < CODE_SIZE; index++) {
-                board->code[index] = codeArray[index];
-            }
-        }
+        handleOptionCode(board, argument);
     }
 }
 
