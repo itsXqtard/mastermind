@@ -4,7 +4,7 @@
 typedef struct Boards {
     int code[CODE_SIZE];
     int attempts;
-    char guesses[CODE_SIZE + 1];
+    char markedBoard[CODE_SIZE + 1];
 } Board;
 
 typedef struct Arguments {
@@ -37,9 +37,12 @@ int main(int argc, char* argv[]) {
 
     printf("Will you find the secret code with %d attempts\n", my_board.attempts);
     int round = 0;
+    int validAttempt = 1;
     while(my_board.attempts != 0) {
-        printf("---\n");
-        printf("Round %d\n", round);
+        if(validAttempt) {
+            printf("---\n");
+            printf("Round %d\n", round);
+        }
         int size = read(STDIN_FILENO, input, sizeof(input) + 1);
         int secret = processSecretCode(input, size);
         if(secret == 1) {
@@ -48,7 +51,9 @@ int main(int argc, char* argv[]) {
         }
         if(!isUserAttemptValid(input) || size != 5){
             printf("Wrong input!\n");
+            validAttempt = 0;
         } else {
+            validAttempt = 1;
             PlacedPiece placedpiece = checkUserInput(&my_board, input);
             if(placedpiece.wellPlaced == CODE_SIZE) {
                 break;
@@ -63,41 +68,7 @@ int main(int argc, char* argv[]) {
     } else {
         printf("Congratz! You did it!\n"); 
     }
-    
-
     return 0;
-
-
-}
-
-/**
- * Returns count of exact positions
- * Side effect - Replaces non exact positions with user's input;
-*/
-int replaceAndReturnExactCount(int boardCode[], char* userCode, char matches[]){
-    int exact = 0;
-    for(int x = 0; x < CODE_SIZE; x++) {
-        int userValue = userCode[x] - '0';
-        if(userValue != boardCode[x]) {
-            matches[x] = userCode[x];
-            continue;
-        }
-        exact++;
-    }
-    return exact;
-}
-
-int contains(char* str, int c)
-{
-    while(*str != '\0') {
-        //convert to character and compare
-        if(*str == (c + '0')){
-            return 1;
-        }
-        str++;
-    }
-    return 0;
-
 }
 
 void printPlacedPieces(PlacedPiece pieces) {
@@ -105,24 +76,6 @@ void printPlacedPieces(PlacedPiece pieces) {
     printf("Misplaced pieces %d\n", pieces.missPlaced);
 }
 
-
-
-// PlacedPiece checkUserInput(Board* board, char* userAttempt) {
-//     char exactMatches[CODE_SIZE + 1] = {'x', 'x', 'x', 'x', '\0'};
-//     PlacedPiece placedPiece = {0, 0};
-//     int exact = replaceAndReturnExactCount(board->code, userAttempt, exactMatches);
-//     int totalMissplaced = CODE_SIZE - exact;
-//     int missplaced = 0;
-//     for(int x = 0; x < CODE_SIZE; x++) {
-//         if(contains(exactMatches, board->code[x]) == 1 && exactMatches[x] != 'x') {
-//             missplaced++;
-//         } 
-//     }
-//     totalMissplaced -= (totalMissplaced - missplaced);
-//     placedPiece.missPlaced = totalMissplaced;
-//     placedPiece.wellPlaced = exact;
-//     return placedPiece;
-// }
 
 int findFirstOccurrence(char* s, char c) {
     int x = 0;
@@ -136,33 +89,48 @@ int findFirstOccurrence(char* s, char c) {
     return -1;
 }
 
-
-
-char* markPieces(Board* board, char* userGuess) {
+void markXPieces(Board* board, char* userGuess) {
     for(int x = 0; x < CODE_SIZE; x++) {
-        if(board->code[x] == userGuess[x]) {
-            board->guesses[x] = 'x';
+        char code = board->code[x] + '0';
+        if(code == userGuess[x]) {
+            board->markedBoard[x] = EXACT;
             continue;
         }
-        board->guesses[x] = board->code[x] + '0';
+        board->markedBoard[x] = code;
     }
-
-    for(int x = 0; x < CODE_SIZE; x++) {
-        int index = findFirstOccurrence(board->guesses, userGuess[x]);
-        if(index >= 0) {
-            board->guesses[index] = 'm';
-        }
-    }
-
-    return board->guesses;
 }
 
-//version 2
-PlacedPiece checkUserInput(Board* board, char* userGuess) {
+void markMPieces(Board* board, char* userGuess){
+    for(int x = 0; x < CODE_SIZE; x++) {
+        int index = findFirstOccurrence(board->markedBoard, userGuess[x]);
+        if(board->markedBoard[x] != EXACT &&index >= 0) {
+            board->markedBoard[index] = MISPLACED;
+        }
+    }
+}
+
+char* markPieces(Board* board, char* userGuess) {
+    markXPieces(board, userGuess);
+    markMPieces(board, userGuess);
+    return board->markedBoard;
+}
+
+PlacedPiece countMarkedPieces(char* markedBoard) {
     PlacedPiece placedPieces = {0, 0};
-    char* markedPieces = markPieces(board, userGuess);
-    printf("Marked board %s\n", markedPieces);
+    for(int index = 0; index < CODE_SIZE; index++) {
+        if(markedBoard[index] == EXACT) {
+            placedPieces.wellPlaced++;
+        }
+        if(markedBoard[index] == MISPLACED) {
+            placedPieces.missPlaced++;
+        }
+    }
     return placedPieces;
+}
+
+PlacedPiece checkUserInput(Board* board, char* userGuess) {
+    char* markedPieces = markPieces(board, userGuess);
+    return countMarkedPieces(markedPieces);
 }
 
 
@@ -181,9 +149,8 @@ Board initBoardDefault() {
     for(int x = 0; x < CODE_SIZE; x++){
         int random_number = rand() % MAX_PIECES + 1;
         board.code[x] = random_number;
-        board.guesses[x] = '-';
     }
-    board.guesses[CODE_SIZE] = '\0';
+    board.markedBoard[CODE_SIZE] = '\0';
     board.attempts = 10;
     return board;
 

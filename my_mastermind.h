@@ -6,6 +6,9 @@
 #define CODE_SIZE 4
 #define MAX_PIECES 7
 #define MAX_SINGLE_DIGIT 9
+#define EXACT 'x'
+#define MISPLACED 'm'
+#define EMPTY '-'
 
 enum t_typename {
     TYPENAME_BOOL,
