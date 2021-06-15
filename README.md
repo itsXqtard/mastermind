@@ -1,10 +1,6 @@
 # my_mastermind
 
-Mastermind is a game composed of 8 pieces of different colors.
-
-A secret code is then composed of 4 distinct pieces.
-
-A player has certain amount of attemps to guess the secret code.
+Mastermind is a game composed of 8 pieces of different colors. A secret code is then composed of 4 distinct pieces. A player has a certain amount of attemps to guess the secret code.
 
 
 ## Game Rules
